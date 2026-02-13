@@ -1,1 +1,1 @@
-
+Overall, this assignment went pretty smoothly and the API worked as expected once everything was set up. Pulling transcript data from a YouTube video helped me understand how APIs return and structure information. The only issue I ran into was that even though the video had lyrics, the transcript struggled to pick up all the words over the music, so a lot of the text was missing. Other than that, I didn’t have any major problems completing the assignment.
