@@ -1,1 +1,684 @@
-
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/SirLousy/LIS4693/blob/main/lab-2\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Lab 2: Text Pre-Processing using spaCy\n",
+        "\n",
+        "In this lab assignment, we will learn to perform some basic text pre-processing using spaCy.\n",
+        "\n",
+        "*Note: Before starting this lab assignment, please complete the Introduction to spaCy notebook*\n",
+        "\n",
+        "## Leaning Objectives\n",
+        "\n",
+        "In this exercise, you will:\n",
+        "\n",
+        "- Load and process your own text file (transcript.txt)\n",
+        "- Split text into sentences\n",
+        "- Count words and sentences\n",
+        "- Find frequently used words\n",
+        "- Use spaCy’s PhraseMatcher to find specific phrases\n",
+        "- Understand the difference between blank pipelines and full pipelines\n",
+        "\n",
+        "This exercise builds directly on concepts from discussed in the precursor notebook on \"Introduction to spaCy\"."
+      ],
+      "metadata": {
+        "id": "KrmsSk1Yzxjg"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Install spaCy"
+      ],
+      "metadata": {
+        "id": "nn-U5ftJ0ebE"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "collapsed": true,
+        "id": "zOaYrB6szuCR",
+        "outputId": "7c294830-feb8-45f4-e75f-95e1625baca5"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Requirement already satisfied: spacy in /usr/local/lib/python3.12/dist-packages (3.8.11)\n",
+            "Requirement already satisfied: spacy-legacy<3.1.0,>=3.0.11 in /usr/local/lib/python3.12/dist-packages (from spacy) (3.0.12)\n",
+            "Requirement already satisfied: spacy-loggers<2.0.0,>=1.0.0 in /usr/local/lib/python3.12/dist-packages (from spacy) (1.0.5)\n",
+            "Requirement already satisfied: murmurhash<1.1.0,>=0.28.0 in /usr/local/lib/python3.12/dist-packages (from spacy) (1.0.15)\n",
+            "Requirement already satisfied: cymem<2.1.0,>=2.0.2 in /usr/local/lib/python3.12/dist-packages (from spacy) (2.0.13)\n",
+            "Requirement already satisfied: preshed<3.1.0,>=3.0.2 in /usr/local/lib/python3.12/dist-packages (from spacy) (3.0.12)\n",
+            "Requirement already satisfied: thinc<8.4.0,>=8.3.4 in /usr/local/lib/python3.12/dist-packages (from spacy) (8.3.10)\n",
+            "Requirement already satisfied: wasabi<1.2.0,>=0.9.1 in /usr/local/lib/python3.12/dist-packages (from spacy) (1.1.3)\n",
+            "Requirement already satisfied: srsly<3.0.0,>=2.4.3 in /usr/local/lib/python3.12/dist-packages (from spacy) (2.5.2)\n",
+            "Requirement already satisfied: catalogue<2.1.0,>=2.0.6 in /usr/local/lib/python3.12/dist-packages (from spacy) (2.0.10)\n",
+            "Requirement already satisfied: weasel<0.5.0,>=0.4.2 in /usr/local/lib/python3.12/dist-packages (from spacy) (0.4.3)\n",
+            "Requirement already satisfied: typer-slim<1.0.0,>=0.3.0 in /usr/local/lib/python3.12/dist-packages (from spacy) (0.24.0)\n",
+            "Requirement already satisfied: tqdm<5.0.0,>=4.38.0 in /usr/local/lib/python3.12/dist-packages (from spacy) (4.67.3)\n",
+            "Requirement already satisfied: numpy>=1.19.0 in /usr/local/lib/python3.12/dist-packages (from spacy) (2.0.2)\n",
+            "Requirement already satisfied: requests<3.0.0,>=2.13.0 in /usr/local/lib/python3.12/dist-packages (from spacy) (2.32.4)\n",
+            "Requirement already satisfied: pydantic!=1.8,!=1.8.1,<3.0.0,>=1.7.4 in /usr/local/lib/python3.12/dist-packages (from spacy) (2.12.3)\n",
+            "Requirement already satisfied: jinja2 in /usr/local/lib/python3.12/dist-packages (from spacy) (3.1.6)\n",
+            "Requirement already satisfied: setuptools in /usr/local/lib/python3.12/dist-packages (from spacy) (75.2.0)\n",
+            "Requirement already satisfied: packaging>=20.0 in /usr/local/lib/python3.12/dist-packages (from spacy) (26.0)\n",
+            "Requirement already satisfied: annotated-types>=0.6.0 in /usr/local/lib/python3.12/dist-packages (from pydantic!=1.8,!=1.8.1,<3.0.0,>=1.7.4->spacy) (0.7.0)\n",
+            "Requirement already satisfied: pydantic-core==2.41.4 in /usr/local/lib/python3.12/dist-packages (from pydantic!=1.8,!=1.8.1,<3.0.0,>=1.7.4->spacy) (2.41.4)\n",
+            "Requirement already satisfied: typing-extensions>=4.14.1 in /usr/local/lib/python3.12/dist-packages (from pydantic!=1.8,!=1.8.1,<3.0.0,>=1.7.4->spacy) (4.15.0)\n",
+            "Requirement already satisfied: typing-inspection>=0.4.2 in /usr/local/lib/python3.12/dist-packages (from pydantic!=1.8,!=1.8.1,<3.0.0,>=1.7.4->spacy) (0.4.2)\n",
+            "Requirement already satisfied: charset_normalizer<4,>=2 in /usr/local/lib/python3.12/dist-packages (from requests<3.0.0,>=2.13.0->spacy) (3.4.4)\n",
+            "Requirement already satisfied: idna<4,>=2.5 in /usr/local/lib/python3.12/dist-packages (from requests<3.0.0,>=2.13.0->spacy) (3.11)\n",
+            "Requirement already satisfied: urllib3<3,>=1.21.1 in /usr/local/lib/python3.12/dist-packages (from requests<3.0.0,>=2.13.0->spacy) (2.5.0)\n",
+            "Requirement already satisfied: certifi>=2017.4.17 in /usr/local/lib/python3.12/dist-packages (from requests<3.0.0,>=2.13.0->spacy) (2026.1.4)\n",
+            "Requirement already satisfied: blis<1.4.0,>=1.3.0 in /usr/local/lib/python3.12/dist-packages (from thinc<8.4.0,>=8.3.4->spacy) (1.3.3)\n",
+            "Requirement already satisfied: confection<1.0.0,>=0.0.1 in /usr/local/lib/python3.12/dist-packages (from thinc<8.4.0,>=8.3.4->spacy) (0.1.5)\n",
+            "Requirement already satisfied: typer>=0.24.0 in /usr/local/lib/python3.12/dist-packages (from typer-slim<1.0.0,>=0.3.0->spacy) (0.24.0)\n",
+            "Requirement already satisfied: cloudpathlib<1.0.0,>=0.7.0 in /usr/local/lib/python3.12/dist-packages (from weasel<0.5.0,>=0.4.2->spacy) (0.23.0)\n",
+            "Requirement already satisfied: smart-open<8.0.0,>=5.2.1 in /usr/local/lib/python3.12/dist-packages (from weasel<0.5.0,>=0.4.2->spacy) (7.5.0)\n",
+            "Requirement already satisfied: MarkupSafe>=2.0 in /usr/local/lib/python3.12/dist-packages (from jinja2->spacy) (3.0.3)\n",
+            "Requirement already satisfied: wrapt in /usr/local/lib/python3.12/dist-packages (from smart-open<8.0.0,>=5.2.1->weasel<0.5.0,>=0.4.2->spacy) (2.1.1)\n",
+            "Requirement already satisfied: click>=8.2.1 in /usr/local/lib/python3.12/dist-packages (from typer>=0.24.0->typer-slim<1.0.0,>=0.3.0->spacy) (8.3.1)\n",
+            "Requirement already satisfied: shellingham>=1.3.0 in /usr/local/lib/python3.12/dist-packages (from typer>=0.24.0->typer-slim<1.0.0,>=0.3.0->spacy) (1.5.4)\n",
+            "Requirement already satisfied: rich>=12.3.0 in /usr/local/lib/python3.12/dist-packages (from typer>=0.24.0->typer-slim<1.0.0,>=0.3.0->spacy) (13.9.4)\n",
+            "Requirement already satisfied: annotated-doc>=0.0.2 in /usr/local/lib/python3.12/dist-packages (from typer>=0.24.0->typer-slim<1.0.0,>=0.3.0->spacy) (0.0.4)\n",
+            "Requirement already satisfied: markdown-it-py>=2.2.0 in /usr/local/lib/python3.12/dist-packages (from rich>=12.3.0->typer>=0.24.0->typer-slim<1.0.0,>=0.3.0->spacy) (4.0.0)\n",
+            "Requirement already satisfied: pygments<3.0.0,>=2.13.0 in /usr/local/lib/python3.12/dist-packages (from rich>=12.3.0->typer>=0.24.0->typer-slim<1.0.0,>=0.3.0->spacy) (2.19.2)\n",
+            "Requirement already satisfied: mdurl~=0.1 in /usr/local/lib/python3.12/dist-packages (from markdown-it-py>=2.2.0->rich>=12.3.0->typer>=0.24.0->typer-slim<1.0.0,>=0.3.0->spacy) (0.1.2)\n",
+            "Collecting en-core-web-sm==3.8.0\n",
+            "  Downloading https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl (12.8 MB)\n",
+            "\u001b[2K     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m12.8/12.8 MB\u001b[0m \u001b[31m94.9 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\n",
+            "\u001b[?25h\u001b[38;5;2m✔ Download and installation successful\u001b[0m\n",
+            "You can now load the package via spacy.load('en_core_web_sm')\n",
+            "\u001b[38;5;3m⚠ Restart to reload dependencies\u001b[0m\n",
+            "If you are in a Jupyter or Colab notebook, you may need to restart Python in\n",
+            "order to load all the package's dependencies. You can do this by selecting the\n",
+            "'Restart kernel' or 'Restart runtime' option.\n"
+          ]
+        }
+      ],
+      "source": [
+        "!pip install spacy\n",
+        "!python -m spacy download en_core_web_sm"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import spacy"
+      ],
+      "metadata": {
+        "id": "nf4NfFdQ0vQH"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Load and read your file from GitHub\n"
+      ],
+      "metadata": {
+        "id": "e4aSZBw50lIv"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import requests\n",
+        "\n",
+        "GITHUB_USERNAME = \"SirLousy\"\n",
+        "REPO_NAME = \"LIS4693\"\n",
+        "BRANCH = \"main\"\n",
+        "FILE_PATH = \"transcript.txt\"\n",
+        "\n",
+        "raw_url = f\"https://raw.githubusercontent.com/SirLousy/LIS4693/main/transcript.txt\"\n",
+        "print(\"Raw URL:\", raw_url)\n",
+        "\n",
+        "r = requests.get(raw_url)\n",
+        "r.raise_for_status()\n",
+        "text = r.text\n",
+        "\n",
+        "print(\"Loaded transcript. Preview (first 300 chars):\")\n",
+        "print(text[:300])\n"
+      ],
+      "metadata": {
+        "id": "FmwSet870txZ",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "fd3e0a04-8e55-4f10-a06e-a66f38b198d1"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Raw URL: https://raw.githubusercontent.com/SirLousy/LIS4693/main/transcript.txt\n",
+            "Loaded transcript. Preview (first 300 chars):\n",
+            "[Music]\n",
+            "[Music]\n",
+            "[Music]\n",
+            "back in smooth subside\n",
+            "[Music]\n",
+            "[Applause]\n",
+            "[Applause]\n",
+            "[Music]\n",
+            "sometimes I can be the true\n",
+            "my buddy\n",
+            "this may be love song\n",
+            "makes me feel some strange\n",
+            "[Music]\n",
+            "[Music]\n",
+            "[Applause]\n",
+            "[Music]\n",
+            "[Applause]\n",
+            "[Applause]\n",
+            "[Music]\n",
+            "[Music]\n",
+            "[Music]\n",
+            "[Music]\n",
+            "[Music]\n",
+            "[Music]\n",
+            "you\n",
+            "[Music]\n",
+            "\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(\"Number of characters:\", len(text))\n",
+        "print(\"First 100 characters:\\n\", text[:100])\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "A5D5nv0Z1Irp",
+        "outputId": "76ee7e7c-985b-4156-a84e-d08fc92f5179"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Number of characters: 288\n",
+            "First 100 characters:\n",
+            " [Music]\n",
+            "[Music]\n",
+            "[Music]\n",
+            "back in smooth subside\n",
+            "[Music]\n",
+            "[Applause]\n",
+            "[Applause]\n",
+            "[Music]\n",
+            "sometimes I can\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Sentence Segmentation\n",
+        "\n",
+        "Create a blank spaCy model and add sentencizer."
+      ],
+      "metadata": {
+        "id": "5NkXcTeY2HEM"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "nlp = spacy.blank(\"en\")\n",
+        "nlp.add_pipe(\"sentencizer\")\n",
+        "\n",
+        "doc = nlp(text)\n",
+        "sentences = list(doc.sents)\n",
+        "\n",
+        "print(\"Number of sentences:\", len(sentences))\n",
+        "print(\"\\nFirst 3 sentences:\\n\")\n",
+        "for i, s in enumerate(sentences[:3], start=1):\n",
+        "    print(f\"{i}. {s.text}\\n\")\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "58uljdmW2OWY",
+        "outputId": "27ff738b-992e-4603-f6bc-c830612c432d"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Number of sentences: 1\n",
+            "\n",
+            "First 3 sentences:\n",
+            "\n",
+            "1. [Music]\n",
+            "[Music]\n",
+            "[Music]\n",
+            "back in smooth subside\n",
+            "[Music]\n",
+            "[Applause]\n",
+            "[Applause]\n",
+            "[Music]\n",
+            "sometimes I can be the true\n",
+            "my buddy\n",
+            "this may be love song\n",
+            "makes me feel some strange\n",
+            "[Music]\n",
+            "[Music]\n",
+            "[Applause]\n",
+            "[Music]\n",
+            "[Applause]\n",
+            "[Applause]\n",
+            "[Music]\n",
+            "[Music]\n",
+            "[Music]\n",
+            "[Music]\n",
+            "[Music]\n",
+            "[Music]\n",
+            "you\n",
+            "[Music]\n",
+            "\n",
+            "\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Word Count and Token Analysis\n",
+        "\n",
+        "Let's count total words and unique words in your text file."
+      ],
+      "metadata": {
+        "id": "gYBJagaG2XLs"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "words = [token.text.lower() for token in doc if token.is_alpha]\n",
+        "total_words = len(words)\n",
+        "unique_words = len(set(words))\n",
+        "\n",
+        "print(\"Total number of words:\", total_words)\n",
+        "print(\"Number of unique words:\", unique_words)\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "6KuPcIi62dU-",
+        "outputId": "42ffcb08-0463-4a3d-996b-3d56a4a1b1fe"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Total number of words: 43\n",
+            "Number of unique words: 24\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Most Frequent Words\n",
+        "\n",
+        "Let's find top 10 most frequent words in your file."
+      ],
+      "metadata": {
+        "id": "Rl8_kxnb2kIE"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from collections import Counter\n",
+        "\n",
+        "word_freq = Counter(words)\n",
+        "most_common_word, most_common_count = word_freq.most_common(1)[0]\n",
+        "\n",
+        "print(\"Most frequent word:\", most_common_word)\n",
+        "print(\"Count:\", most_common_count)\n",
+        "\n",
+        "print(\"\\nTop 10 most frequent words:\")\n",
+        "for word, count in word_freq.most_common(10):\n",
+        "    print(word, count)\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "KCiWP90v2rFZ",
+        "outputId": "347dbfcb-c54a-4920-bc1d-ddd5009e4461"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Most frequent word: music\n",
+            "Count: 15\n",
+            "\n",
+            "Top 10 most frequent words:\n",
+            "music 15\n",
+            "applause 5\n",
+            "be 2\n",
+            "back 1\n",
+            "in 1\n",
+            "smooth 1\n",
+            "subside 1\n",
+            "sometimes 1\n",
+            "i 1\n",
+            "can 1\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Using Full spaCy Pipeline\n",
+        "\n",
+        "Now use the full model for better linguistic analysis."
+      ],
+      "metadata": {
+        "id": "pwWY7k2q3E19"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "try:\n",
+        "    nlp2 = spacy.load(\"en_core_web_sm\")\n",
+        "except OSError:\n",
+        "    !python -m spacy download en_core_web_sm\n",
+        "    nlp2 = spacy.load(\"en_core_web_sm\")\n",
+        "\n",
+        "doc2 = nlp2(text)\n",
+        "entities = list(doc2.ents)\n",
+        "entity_types = sorted(set(ent.label_ for ent in entities))\n",
+        "\n",
+        "print(\"How many named entities were found?:\", len(entities))\n",
+        "print(\"What types of entities appear?:\", entity_types)\n",
+        "\n",
+        "print(\"\\nFirst 15 entities (text - label):\")\n",
+        "for ent in entities[:15]:\n",
+        "    print(ent.text, \"-\", ent.label_)\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "RLbCpPFk3KRw",
+        "outputId": "3f23755b-b9c0-46e3-904f-9eb1cc7e4747"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "How many named entities were found?: 0\n",
+            "What types of entities appear?: []\n",
+            "\n",
+            "First 15 entities (text - label):\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## PhraseMatcher"
+      ],
+      "metadata": {
+        "id": "LYeccjNQ5Xvt"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from spacy.matcher import PhraseMatcher\n",
+        "from collections import Counter\n",
+        "\n",
+        "phrases = [\n",
+        "    \"MUSIC\",\n",
+        "    \"Applause\",\n",
+        "    \"back in smooth subside\"\n",
+        "]\n",
+        "\n",
+        "matcher = PhraseMatcher(nlp2.vocab, attr=\"LOWER\")\n",
+        "patterns = [nlp2.make_doc(p) for p in phrases]\n",
+        "matcher.add(\"TOPIC_PHRASES\", patterns)\n",
+        "\n",
+        "matches = matcher(doc2)\n",
+        "print(\"Total phrase matches found:\", len(matches))\n",
+        "\n",
+        "matched_spans = [doc2[start:end].text for _, start, end in matches]\n",
+        "match_counts = Counter([m.lower() for m in matched_spans])\n",
+        "\n",
+        "print(\"\\nMatches by phrase:\")\n",
+        "for phrase, count in match_counts.most_common():\n",
+        "    print(f\"{phrase} -> {count}\")\n",
+        "\n",
+        "print(\"\\nExample match contexts (up to 10):\")\n",
+        "for i, (_, start, end) in enumerate(matches[:10], start=1):\n",
+        "    span = doc2[start:end]\n",
+        "    left = doc2[max(0, start-8):start].text\n",
+        "    right = doc2[end:min(len(doc2), end+8)].text\n",
+        "    print(f\"{i}. ...{left} [{span.text}] {right}...\")\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "AJdhOviq5bUn",
+        "outputId": "146d6294-6174-41eb-9b7d-c4d28706673a"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Total phrase matches found: 21\n",
+            "\n",
+            "Matches by phrase:\n",
+            "music -> 15\n",
+            "applause -> 5\n",
+            "back in smooth subside -> 1\n",
+            "\n",
+            "Example match contexts (up to 10):\n",
+            "1. ...[ [Music] ]\n",
+            "[Music]\n",
+            "[Music...\n",
+            "2. ...[Music]\n",
+            "[ [Music] ]\n",
+            "[Music]\n",
+            "back in...\n",
+            "3. ...Music]\n",
+            "[Music]\n",
+            "[ [Music] ]\n",
+            "back in smooth subside\n",
+            "[...\n",
+            "4. ...[Music]\n",
+            "[Music]\n",
+            " [back in smooth subside] \n",
+            "[Music]\n",
+            "[Applause]...\n",
+            "5. ...]\n",
+            "back in smooth subside\n",
+            "[ [Music] ]\n",
+            "[Applause]\n",
+            "[Applause...\n",
+            "6. ...smooth subside\n",
+            "[Music]\n",
+            "[ [Applause] ]\n",
+            "[Applause]\n",
+            "[Music...\n",
+            "7. ...Music]\n",
+            "[Applause]\n",
+            "[ [Applause] ]\n",
+            "[Music]\n",
+            "sometimes I...\n",
+            "8. ...Applause]\n",
+            "[Applause]\n",
+            "[ [Music] ]\n",
+            "sometimes I can be the true...\n",
+            "9. ...\n",
+            "makes me feel some strange\n",
+            "[ [Music] ]\n",
+            "[Music]\n",
+            "[Applause...\n",
+            "10. ...some strange\n",
+            "[Music]\n",
+            "[ [Music] ]\n",
+            "[Applause]\n",
+            "[Music...\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "28RCMziSIXK0"
+      },
+      "source": [
+        "## TASK 8: Reflection\n",
+        "\n",
+        "Write a brief reflection (a few sentences):\n",
+        "\n",
+        "- What went well?\n",
+        "- What did not go well / challenges?\n",
+        "\n",
+        "**Reflection:**\n",
+        "\n",
+        "(This lab went smoother once I fixed a couple mistakes from Day 1. I realized my files were not actually inside the lab-1 folder in my repo, which caused some confusion at first when trying to load the transcript. After organizing the repo correctly and using the proper raw GitHub link, everything started working the way it should. It felt good seeing the transcript load correctly and being able to break it into sentences and count the words.\n",
+        "\n",
+        "One challenge I ran into was that the video I originally chose for Lab-1 was a music video. Because of that, there were not that many meaningful words being picked up during token analysis, which made some of the results less interesting. I also had to adjust my PhraseMatcher phrases to make sure they actually appeared in the transcript. Overall, this lab helped me understand how important file structure and input text quality are when doing text preprocessing..)\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [],
+      "metadata": {
+        "id": "RJLYT-6EMUd-"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "_r3AAaDbIXK0"
+      },
+      "source": [
+        "## Submission Checklist\n",
+        "\n",
+        "1. Create a `lab-2` folder in your `lis4693` or `lis5693` GitHub repo.\n",
+        "2. In Colab: **File → Save a copy in GitHub** (do not upload manually).\n",
+        "3. Save your notebook into `lab-2/` (example: `lab-2/lab2.ipynb`).\n",
+        "4. Submit the link to your GitHub repo (or the `lab-2` folder) on Canvas.\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# EXCERCISE\n",
+        "\n",
+        "Open a new Google Colab notebook and complete the tasks below. As you work, add brief explanations using the **Text (Markdown) cells** throughout your notebook to describe what you are doing.\n",
+        "\n",
+        "1. Make a new folder named `lab-2` in your `lis4693` or `lis5693` repo on GitHub. **[1 Point]**\n",
+        "\n",
+        "2. Complete the following tasks:\n",
+        "\n",
+        "\n",
+        "**TASK 1**: Load and read your `transcript.txt` file from lab-1 from GitHub repo directly **[1 Point]**\n",
+        "\n",
+        "**TASK 2**: How many characters are in your transcript? Print the first 100 characters. **[1 Point]**\n",
+        "\n",
+        "**TASK 3**: Perform sentence segmentation using the blank pipeline\n",
+        "  - How many sentences are in your transcript? **[0.5 Point]**\n",
+        "  - Print the first 3 sentences **[0.5 Point]**\n",
+        "\n",
+        "**TASK 4**: Perform Word Count and Token Analysis\n",
+        "  - What is the total number of words? **[0.5 Point]**\n",
+        "  - What is the number of unique words? **[0.5 Point]**\n",
+        "\n",
+        "**TASK 5**: Find Most Frequent Words\n",
+        "  - What is the most frequent word? **[0.5 Point]**\n",
+        "  - Why do you think this word appears frequently? **[1 Point]**\n",
+        "\n",
+        "**TASK 6**: Run full spaCy pipeline\n",
+        "  - How many named entities were found? **[0.5 Point]**\n",
+        "  - What types of entities appear? (PERSON, ORG, DATE, etc.) **[0.5 Point]**\n",
+        "\n",
+        "**TASK 7**: Use PhraseMatcher **[1 Point]**\n",
+        "\n",
+        "When you selected your YouTube video in Lab-1, what topic or subject were you interested in? Based on that topic, identify three specific phrases that are directly relevant to your search. For example, if your video was about information retrieval, relevant phrases might include \"information retrieval,\" \"text mining,\" and \"data science.\"\n",
+        "\n",
+        "Make sure the video you selected in Lab-1 was clearly related to your chosen topic and was the same video for which you downloaded the transcript in Lab-1.\n",
+        "\n",
+        "**TASK 8**: At the end of your Colab notebook, create a new text cell and write a brief reflection for this assignment in a few sentences addressing the following **[2 Points]**:\n",
+        " - What went well?\n",
+        " - What did not go well or what challenges you encountered?\n",
+        "\n",
+        "3. Push your Google Colab file to your `lab-2` GitHub repo from Colab. *No points will be given if you upload it to GitHub directly!* **[1 Point]**\n",
+        "4. Share the link to your `lab-2` GitHub repo for this lab assignment on CANVAS for credit. **[0.5 Point]**\n"
+      ],
+      "metadata": {
+        "id": "gl10QFLRzuy2"
+      }
+    }
+  ]
+}
